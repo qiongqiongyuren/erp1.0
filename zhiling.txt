@@ -1,3 +1,11 @@
+# 查看当前状态（有没有改动）
+git status
+
+# 把所有更改添加到暂存区
 git add .
-git commit -m "更新说明，"
+
+# 提交更改（可改备注）
+git commit -m "更新了功能 xxx"
+
+# 推送到 GitHub
 git push

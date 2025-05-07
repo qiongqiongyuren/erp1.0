@@ -9,3 +9,6 @@ git commit -m "更新了功能 xxx"
 
 # 推送到 GitHub
 git push
+
+#启动服务器
+npm run dev

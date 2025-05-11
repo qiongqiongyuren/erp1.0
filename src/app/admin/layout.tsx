@@ -13,12 +13,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isLoginPage = pathname === '/admin/login';
   
-  // 如果是登录页面，不显示侧边栏
-  if (pathname === '/admin/login') {
-    return children;
-  }
-
   // 本地存储用户信息
   const [userInfo, setUserInfo] = useState<{ username: string; role: string } | null>(null);
 
@@ -35,10 +31,10 @@ export default function AdminLayout({
   }, []);
 
   return (
-    <Layout style={{ minHeight: '100vh', flexDirection: 'row' }}>
-      <AdminSidebar />
-      <Layout style={{ marginLeft: 200, width: '100%' }}>
-        <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
+    <Layout style={{ minHeight: '100vh' }}>
+      {!isLoginPage && <AdminSidebar />}
+      <Layout style={{ marginLeft: !isLoginPage ? 200 : 0, transition: 'margin-left 0.2s' }}>
+        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
           <div className="mb-4 flex justify-between items-center">
             <button
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow"

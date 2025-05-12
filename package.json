@@ -10,6 +10,7 @@
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
+    "@ant-design/cssinjs": "^1.23.0",
     "@ant-design/icons": "^5.3.1",
     "@prisma/client": "^6.7.0",
     "antd": "^5.15.1",

@@ -1,25 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client/edge';
 
-const prisma = new PrismaClient();
+// 使用单例模式创建 Prisma 客户端实例
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-export async function POST(req: NextRequest) {
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const { username, password, email } = await req.json();
+    const body = await request.json();
+    const { username, password, email } = body;
+
     if (!username || !password || !email) {
-      return NextResponse.json({ error: '用户名、密码和邮箱不能为空' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Username, password and email are required' },
+        { status: 400 }
+      );
     }
+
     // 检查用户名或邮箱是否已存在
-    const existingUser = await prisma.user.findFirst({ where: { OR: [{ username }, { email }] } });
-    if (existingUser) {
-      return NextResponse.json({ error: '用户名或邮箱已存在' }, { status: 409 });
-    }
-    // 创建新用户，角色默认为 user
-    const user = await prisma.user.create({
-      data: { username, password, email, role: 'user' },
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username },
+          { email }
+        ]
+      }
     });
-    return NextResponse.json({ id: user.id, username: user.username, email: user.email, role: user.role });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'Username or email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // 创建新用户
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password,
+        email,
+        role: 'user'
+      }
+    });
+
+    return NextResponse.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    });
   } catch (error) {
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    console.error('Error registering user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

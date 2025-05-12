@@ -1,21 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client/edge';
 
-const prisma = new PrismaClient();
+// 使用单例模式创建 Prisma 客户端实例
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 // GET: 获取所有商品
 export async function GET() {
-  const products = await prisma.product.findMany();
-  return NextResponse.json(products);
+  try {
+    const products = await prisma.product.findMany();
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
 
 // POST: 新增商品
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const data = await req.json();
-    const product = await prisma.product.create({ data });
+    const body = await request.json();
+    const product = await prisma.product.create({ data: body });
     return NextResponse.json(product);
   } catch (error) {
-    return NextResponse.json({ error: '添加失败' }, { status: 500 });
+    console.error('Error creating product:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

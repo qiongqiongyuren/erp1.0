@@ -1,28 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client/edge';
 
-const prisma = new PrismaClient();
+// 使用单例模式创建 Prisma 客户端实例
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 // PUT: 更新原材料
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const data = await req.json();
+    const body = await request.json();
     const material = await prisma.rawMaterial.update({
       where: { id: params.id },
-      data,
+      data: body,
     });
     return NextResponse.json(material);
   } catch (error) {
-    return NextResponse.json({ error: '更新失败' }, { status: 500 });
+    console.error('Error updating material:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 // DELETE: 删除原材料
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await prisma.rawMaterial.delete({ where: { id: params.id } });
+    await prisma.rawMaterial.delete({
+      where: { id: params.id },
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: '删除失败' }, { status: 500 });
+    console.error('Error deleting material:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
